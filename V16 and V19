@@ -1,0 +1,39 @@
+import torch
+import torchvision.models as models
+import torchvision.transforms as transforms
+from PIL import Image
+import numpy as np
+
+# Topic: Load Pretrained Models
+# Load VGG-16 and VGG-19 models
+vgg16 = models.vgg16(pretrained=True).eval()
+vgg19 = models.vgg19(pretrained=True).eval()
+
+# Topic: Image Preprocessing
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+def load_and_preprocess(image_path):
+    image = Image.open(image_path).convert("RGB")
+    image = transform(image).unsqueeze(0)  # Add batch dimension
+    return image
+
+# Topic: Prediction Function
+def predict(model, image_path):
+    image = load_and_preprocess(image_path)
+    with torch.no_grad():
+        output = model(image)
+    probabilities = torch.nn.functional.softmax(output[0], dim=0)
+    class_index = torch.argmax(probabilities).item()
+    return class_index, probabilities[class_index].item()
+
+# Example usage
+image_path = "cat_or_dog.jpg"  # Replace with your image path
+vgg16_class, vgg16_conf = predict(vgg16, image_path)
+vgg19_class, vgg19_conf = predict(vgg19, image_path)
+
+print(f"VGG-16 Prediction: Class {vgg16_class}, Confidence {vgg16_conf:.4f}")
+print(f"VGG-19 Prediction: Class {vgg19_class}, Confidence {vgg19_conf:.4f}")
